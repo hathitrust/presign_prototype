@@ -18,7 +18,7 @@ public_key_pem = public_key.public_bytes(
     format=serialization.PublicFormat.SubjectPublicKeyInfo
 )
 
-with open('public.pem', 'wb') as f:
+with open('../public.pem', 'wb') as f:
     f.write(public_key_pem)
     print("Public key saved to public.pem")
 
@@ -29,7 +29,7 @@ private_key_pem = private_key.private_bytes(
     encryption_algorithm=serialization.NoEncryption()
 )
 
-with open('private.pem', 'wb') as f:
+with open('../private.pem', 'wb') as f:
     f.write(private_key_pem)
     print("Private key saved to private.pem")
 
