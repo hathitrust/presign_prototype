@@ -10,7 +10,7 @@ key_dir = Path(__file__).resolve().parent.parent
 public_key_path = key_dir / "public.pem"
 
 with open(public_key_path, "rb") as key_file:
-    public_key = serialization.load_pem_public_key(
+    app.config['public_key'] = serialization.load_pem_public_key(
         key_file.read()
     )
 
@@ -20,7 +20,7 @@ def handle_request():
     if auth_header:
         try:
             token = auth_header.split(" ")[1]
-            jwt_payload = jwt.decode(token, public_key, algorithms=["RS256"])
+            jwt_payload = jwt.decode(token, app.config['public_key'], algorithms=["RS256"])
             # Proceed with the request, payload contains the decoded JWT
             print(auth_header)
             print(jwt_payload)
