@@ -1,17 +1,16 @@
-from cryptography.hazmat.primitives import serialization
 import time
 from pathlib import Path
 
-import pytest
+import pytest    
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from jose import jwt
 
 from server.app import app  # Import the Flask app
 
+
 # Helper function to generate private and public keys for testing
 def generate_keys(path):
-    print(path)
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
 
     # Generate a private key
     private_key = rsa.generate_private_key(
