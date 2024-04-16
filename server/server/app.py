@@ -1,11 +1,15 @@
+from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
 from flask import Flask, request
 from jose import jwt
-from cryptography.hazmat.primitives import serialization
 
 app = Flask(__name__)
 
-# Load the client's public key
-with open("../public.pem", "rb") as key_file:
+key_dir = Path(__file__).resolve().parent.parent
+public_key_path = key_dir / "public.pem"
+
+with open(public_key_path, "rb") as key_file:
     public_key = serialization.load_pem_public_key(
         key_file.read()
     )
