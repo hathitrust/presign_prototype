@@ -23,7 +23,7 @@ def generate_keys(path):
     public_key = private_key.public_key()
 
     # Serialize the private key
-    pem = private_key.private_bytes(
+    private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.NoEncryption()
@@ -33,10 +33,10 @@ def generate_keys(path):
     key_dir = Path(path).resolve().parent.parent
     private_key_path = key_dir / "private.pem"
     with open(private_key_path, "wb") as key_file:
-        key_file.write(pem)
+        key_file.write(private_pem)
 
     # Serialize the public key
-    pem = public_key.public_bytes(
+    public_pem = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
@@ -44,7 +44,7 @@ def generate_keys(path):
     # Write the public key to a file
     public_key_path = key_dir / "public.pem"
     with open(public_key_path, "wb") as key_file:
-        key_file.write(pem)
+        key_file.write(public_pem)
 
     return private_key_path, public_key_path
 
