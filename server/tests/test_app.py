@@ -1,7 +1,8 @@
 import time
 from pathlib import Path
+from unittest.mock import patch
 
-import pytest    
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jose import jwt
@@ -97,7 +98,11 @@ def test_invalid_token(client):
     assert response.status_code == 401
     assert 'Invalid token' in response.data.decode()
 
-def test_valid_request(client, keys):
+@patch('server.app.s3_client') 
+def test_valid_request(mock_s3_client, client, keys):
+
+    payload = 'http://google.com'
+    mock_s3_client.generate_presigned_url.return_value = payload
 
     # Load the public key into the app
     with open(keys[1], "rb") as key_file:
@@ -114,4 +119,4 @@ def test_valid_request(client, keys):
     )
 
     assert response.status_code == 200
-    assert 'Success' in response.data.decode()
+    assert payload in response.text

@@ -2,13 +2,37 @@ from pathlib import Path
 
 import boto3
 import yaml
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, request
 from jose import jwt
 
 app = Flask(__name__)
 
+# create path for the config file
+config_path = Path(__file__).parent / "config.yaml"
+
+with open(config_path, "r") as config_file:
+    config = yaml.safe_load(config_file)
+
+# Specify the file name that will appear in the bucket once uploaded
+object_name = "test.txt"
+
+# URL expiration time in seconds
+url_expiration = 3600  # 1 hour
+
+# Create a Boto3 session with the specified profile
+session = boto3.Session(profile_name=config["profile"], region_name="us-west-2")
+
+# Create an S3 client from the session
+s3_client = session.client("s3")
+
+key_dir = Path(config["key_dir"])
+
+public_key_path = key_dir / "public.pem"
+
+with open(public_key_path, "rb") as key_file:
+    app.config["public_key"] = serialization.load_pem_public_key(key_file.read())
 
 def generate_presigned_url(bucket_name, object_name, expiration):
     """
@@ -35,7 +59,6 @@ def encrypt_message(message, public_key):
             label=None
         )
     )
-
 
 
 @app.route("/api/endpoint", methods=["POST"])
@@ -68,27 +91,6 @@ def handle_request():
         return "Missing token", 401
 
 
+
 if __name__ == "__main__":
-    with open("config.yaml", "r") as config_file:
-        config = yaml.safe_load(config_file)
-
-    # Specify the file name that will appear in the bucket once uploaded
-    object_name = "raiden_test.txt"
-
-    # URL expiration time in seconds
-    url_expiration = 3600  # 1 hour
-
-    # Create a Boto3 session with the specified profile
-    session = boto3.Session(profile_name=config["profile"], region_name="us-west-2")
-
-    # Create an S3 client from the session
-    s3_client = session.client("s3")
-
-    key_dir = Path(config["key_dir"])
-
-    public_key_path = key_dir / "public.pem"
-
-    with open(public_key_path, "rb") as key_file:
-        app.config["public_key"] = serialization.load_pem_public_key(key_file.read())
-
     app.run()
