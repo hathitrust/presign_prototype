@@ -15,6 +15,7 @@ pytest = "*"
 pytest-flask = "*"
 ruff = "*"
 isort = "*"
+pyyaml = "*"
 
 [dev-packages]
 

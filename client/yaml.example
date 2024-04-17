@@ -1,0 +1,4 @@
+key_dir = ../keys
+contrib_id = zephir
+contrib_email = zephir@cdlib.org
+exp = 3600
