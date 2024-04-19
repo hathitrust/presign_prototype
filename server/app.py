@@ -49,17 +49,6 @@ def generate_presigned_url(bucket_name, object_name, expiration):
         print(f"Error generating pre-signed URL: {e}")
         return None
 
-# Function to encrypt a message
-def encrypt_message(message, public_key):
-    return public_key.encrypt(
-        message.encode(),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-
 
 @app.route("/api/endpoint", methods=["POST"])
 def handle_request():
@@ -80,9 +69,6 @@ def handle_request():
             presigned_url = generate_presigned_url(
                 config["bucket_name"], object_name, url_expiration
             )
-
-            # encrypted_url = encrypt_message(presigned_url, app.config["public_key"])
-            # return encrypted_url.hex(), 200
 
             return presigned_url, 200
         except jwt.JWTError:
