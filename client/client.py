@@ -10,10 +10,10 @@ import argparse
 import yaml
 
 
-def create_headers(contrib_id, contrib_email, exp, private_key):
+def generate_jwt_token(sub, email, exp, private_key):
     payload = {
-        "sub": contrib_id,
-        "email": contrib_email,
+        "sub": sub,
+        "email": email,
         "iat": int(time.time()),
         "exp": int(time.time()) + exp
     }
@@ -21,22 +21,7 @@ def create_headers(contrib_id, contrib_email, exp, private_key):
     # Create the JWT token using RS256 algorithm
     token = jwt.encode(payload, private_key, algorithm="RS256")
 
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-
-    return headers
-
-# Function to decrypt a message
-def decrypt_message(encrypted_message, private_key):
-    return private_key.decrypt(
-        bytes.fromhex(encrypted_message),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
+    return token
 
 def upload_file(file_path, url):
     # Upload the file to the presigned URL
@@ -46,38 +31,23 @@ def upload_file(file_path, url):
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
         print(response.text, file=sys.stderr)
-        return
+        return False
 
-    print("File uploaded successfully")
+    print("File uploaded successfully", file=sys.stderr)
+    return True
 
     
-def request_presigned(filename, config):
-    # Get private key
-    private_key_path = Path(config["key_dir"]) / "private.pem"
-    
-    with open(private_key_path, "rb") as key_file:
-        private_key = key_file.read()
+def request_presigned_url(data, token, server_url):
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
 
-    # Create the headers
-    headers = create_headers(
-        config["contrib_id"],
-        config["contrib_email"],
-        config["exp"],
-        private_key,
-    )
-        
-    # Make the HTTP POST request with the JWT in the Authorization header
-    data = {"file": filename, "stream": "uni1"}
-    response = requests.post("http://127.0.0.1:5000/api/endpoint", headers=headers, json=data)
+    response = requests.post(server_url, headers=headers, json=data)
  
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
         print(response.text, file=sys.stderr)
         return
-
-    # Decrypt the URL
-    # encrypted_url = response.text
-    # url = decrypt_message(encrypted_url, private_key).decode("utf-8")
 
     return response.text
     
@@ -90,9 +60,33 @@ def main():
     parser.add_argument("--file", help="File to be uploaded", required=True)
     args = parser.parse_args()
 
-    url = request_presigned(args.file, config)
+    # Get private key
+    private_key_path = Path(config["key_dir"]) / "private.pem"
+    
+    with open(private_key_path, "rb") as key_file:
+        private_key = key_file.read()
 
-    upload_file(args.file, url)
+    # Create the headers
+    token = generate_jwt_token(
+        config["contrib_id"],
+        config["contrib_email"],
+        config["exp"],
+        private_key,
+    )
+
+    data = {"file": args.file}
+
+    url = request_presigned_url(data, 
+                                token, 
+                                config['server_url'])
+
+    result = upload_file(args.file, url)
+
+    if not result:
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
 
 
 if __name__ == "__main__":
