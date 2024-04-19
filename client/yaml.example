@@ -2,3 +2,4 @@ key_dir: ../keys
 contrib_id: test
 contrib_email: test@test.org
 exp: 3600
+server_url: https://server.com/api/endpoint
