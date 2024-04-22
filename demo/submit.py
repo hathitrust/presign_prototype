@@ -1,5 +1,6 @@
 import requests
 
+
 def upload_file(url, file_path):
     """
     Upload a file to an S3 bucket using a pre-signed URL.

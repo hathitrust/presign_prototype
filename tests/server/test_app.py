@@ -8,67 +8,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jose import jwt
 
 from server.app import app  # Import the Flask app
-
-
-# Helper function to generate private and public keys for testing
-def generate_keys(path):
-
-    # Generate a private key
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048
-    )
-
-    # Get the public key
-    public_key = private_key.public_key()
-
-    # Serialize the private key
-    private_pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-
-    # Write the private key to a file
-    key_dir = Path(path).resolve().parent.parent
-    private_key_path = key_dir / "private.pem"
-    with open(private_key_path, "wb") as key_file:
-        key_file.write(private_pem)
-
-    # Serialize the public key
-    public_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-
-    # Write the public key to a file
-    public_key_path = key_dir / "public.pem"
-    with open(public_key_path, "wb") as key_file:
-        key_file.write(public_pem)
-
-    return private_key_path, public_key_path
-
-# Helper function to generate tokens for testing
-def generate_token(private_key_path):
-
-    with open(private_key_path, "rb") as key_file:
-        private_key = key_file.read()
-
-    # User information
-    contrib_id = "UNV"
-    contrib_email = "user@uni.com"
-
-    # Create a sample payload
-    payload = {
-        "sub": contrib_id,
-        "email": contrib_email,
-        "iat": int(time.time()),
-        "exp": int(time.time()) + 3600
-    }
-
-    # Generate a token
-    token = jwt.encode(payload, private_key, algorithm='RS256')
-    return token
+from lib.key_helper import generate_jwt_token
+from lib.key_helper import generate_rsa_pem_key_pair
 
 @pytest.fixture
 def client():
@@ -76,47 +17,50 @@ def client():
     with app.test_client() as client:
         yield client
 
-# Create the keys before running the tests
-@pytest.fixture(scope='session')
-def keys(tmp_path_factory):
-    path = tmp_path_factory.mktemp("keys")
-    private_key_path, public_key_path = generate_keys(path)
-    return private_key_path, public_key_path
-
-def test_missing_token(client):
+def test_missing_auth_header(client):
     # Test the endpoint without Authorization header
     response = client.post('/api/endpoint')
     assert response.status_code == 401
-    assert 'Missing token' in response.data.decode()
+    assert 'Missing authorization header' in response.data.decode()
 
-def test_invalid_token(client):
+@patch('server.app.PublicKeyManager.get_key')
+def test_invalid_token(mock_get_key, client):
+    # Setup mock to return a fake user key
+    mock_get_key.return_value = "fake user exists"
     # Test the endpoint with an invalid token
     response = client.post(
         '/api/endpoint',
-        headers={"Authorization": "Bearer invalid_token"}
+        headers={"Authorization": "Bearer invalid_token"},
+        json={"user": "test_user", "file": "test.txt"}
     )
     assert response.status_code == 401
-    assert 'Invalid token' in response.data.decode()
+    assert 'Invalid or expired token' in response.data.decode()
 
-@patch('server.app.s3_client') 
-def test_valid_request(mock_s3_client, client, keys):
+@patch('server.app.PublicKeyManager.get_key')
+@patch('server.app.s3_client')
+def test_valid_request(mock_s3_client, mock_get_key, client):
 
+    # Load private key to generate token
+    private_key, public_key = generate_rsa_pem_key_pair()
+
+    # Generate a valid JWT token
+    sub= "UNV"
+    email = "user@uni.com"
+    valid_token = generate_jwt_token(sub, email, private_key) 
+    
+    # Setup mock to validate the token by public key
+    mock_get_key.return_value = public_key
+
+    # Setup mock for the presigned URL generation
     payload = 'http://google.com'
     mock_s3_client.generate_presigned_url.return_value = payload
 
-    # Load the public key into the app
-    with open(keys[1], "rb") as key_file:
-        app.config['public_key'] = serialization.load_pem_public_key(
-            key_file.read()
-        )
-
-    # Test the endpoint with a valid token
-    valid_token = generate_token(keys[0])
+    # Test the endpoint with a valid token and user identifier
     response = client.post(
         '/api/endpoint',
         headers={"Authorization": f"Bearer {valid_token}"},
-        json={"data": "This is a test."}
+        json={"user": "test_user", "file": "test.txt"} 
     )
 
     assert response.status_code == 200
-    assert payload in response.text
+    assert payload in response.data.decode()
