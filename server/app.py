@@ -1,38 +1,45 @@
+import re
 from pathlib import Path
 
 import boto3
 import yaml
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, request
 from jose import jwt
 
+from lib.key_helper import PublicKeyManager
+
 app = Flask(__name__)
 
-# create path for the config file
+# Load configuration from the config file
 config_path = Path(__file__).parent / "config.yaml"
-
 with open(config_path, "r") as config_file:
     config = yaml.safe_load(config_file)
 
-# Specify the file name that will appear in the bucket once uploaded
-object_name = "test.txt"
-
 # URL expiration time in seconds
-url_expiration = 3600  # 1 hour
+URL_EXPIRATION = 3600 # 1 hour
+
+# time limit for token
+TOKEN_EXPIRATION = 3600
+
+# Maximum length of the file name
+MAX_FILE_NAME_LENGTH = 60
 
 # Create a Boto3 session with the specified profile
-session = boto3.Session(profile_name=config["profile"], region_name="us-west-2")
+session = boto3.Session(profile_name=config["profile"], region_name=config["region"])
 
 # Create an S3 client from the session
 s3_client = session.client("s3")
 
+# Directory containing public keys
 key_dir = Path(config["key_dir"])
 
-public_key_path = key_dir / "public.pem"
+# Initialize the public key manager
+key_manager = PublicKeyManager(key_dir)
 
-with open(public_key_path, "rb") as key_file:
-    app.config["public_key"] = serialization.load_pem_public_key(key_file.read())
+def is_valid_filename(filename):
+    pattern = re.compile(r'^[a-zA-Z0-9\-_\.]+$')
+    return bool(pattern.match(filename))
+
 
 def generate_presigned_url(bucket_name, object_name, expiration):
     """
@@ -49,48 +56,50 @@ def generate_presigned_url(bucket_name, object_name, expiration):
         print(f"Error generating pre-signed URL: {e}")
         return None
 
-# Function to encrypt a message
-def encrypt_message(message, public_key):
-    return public_key.encrypt(
-        message.encode(),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-
-
 @app.route("/api/endpoint", methods=["POST"])
 def handle_request():
     auth_header = request.headers.get("Authorization")
-    if auth_header:
-        try:
-            token = auth_header.split(" ")[1]
-            jwt_payload = jwt.decode(
-                token, app.config["public_key"], algorithms=["RS256"]
-            )
-            # Proceed with the request, payload contains the decoded JWT
-            #print(auth_header)
-            print(jwt_payload)
-            # print the post request data
-            print(request.json)
+    if not auth_header:
+        return {"error": "Missing authorization header"}, 401
 
-            # Return a presigned url
-            presigned_url = generate_presigned_url(
-                config["bucket_name"], object_name, url_expiration
-            )
+    token_parts = auth_header.split(" ")
+    if len(token_parts) != 2 or token_parts[0] != "Bearer":
+        return {"error": "Invalid authorization header format"}, 401
+    token = token_parts[1]
 
-            # encrypted_url = encrypt_message(presigned_url, app.config["public_key"])
-            # return encrypted_url.hex(), 200
+    user = request.json.get("user")
+    if not user:
+        return {"error": "Missing 'user' in request body"}, 400
 
-            return presigned_url, 200
-        except jwt.JWTError:
-            return "Invalid token", 401
-    else:
-        return "Missing token", 401
+    public_key = key_manager.get_key(user)
+    if not public_key:
+        return {"error": "Public key not found for user"}, 404
 
+    try:
+        jwt_payload = jwt.decode(token, public_key, algorithms=["RS256"])
+    except jwt.JWTError:
+        return {"error": "Invalid or expired token"}, 401
+    
+    if (jwt_payload["exp"] - jwt_payload["iat"]) > TOKEN_EXPIRATION:
+        return {"error": "Token has expired for server time limit"}, 401
+    
+    file_name = request.json.get("file")
+    if not file_name:
+        return {"error": "File name not provided"}, 400
+    
+    if len(file_name) > MAX_FILE_NAME_LENGTH:
+        return {"error": "File name is too long"}, 400
 
+    if not is_valid_filename(file_name):
+        return {"error": "File name contains invalid characters"}, 400
+
+    object_name = f"{config['folder']}/{user}/{file_name}"
+    presigned_url = generate_presigned_url(config["bucket_name"], object_name, URL_EXPIRATION)
+    if not presigned_url:
+        return {"error": "Error generating pre-signed URL"}, 500
+
+    return {"presigned_url": presigned_url}, 200
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
+

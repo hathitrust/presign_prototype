@@ -1,6 +1,6 @@
+from cryptography.hazmat.primitives import serialization
 from flask import Flask, request
 from jose import jwt
-from cryptography.hazmat.primitives import serialization
 
 app = Flask(__name__)
 

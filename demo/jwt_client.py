@@ -1,9 +1,7 @@
-from jose import jwt
 import time
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-import requests
 
+import requests
+from jose import jwt
 
 # Load the private key from the PEM file
 with open("private.pem", "rb") as key_file:
