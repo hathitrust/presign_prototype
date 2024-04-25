@@ -1,0 +1,5 @@
+private_key_path: keys/example_private.pem
+user: example
+email: example@example.com
+jwt_expiration: 3600
+server_url: https://server.com/api/endpoint
