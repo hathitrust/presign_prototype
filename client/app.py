@@ -10,8 +10,6 @@ import lib.key_helper as kh
 
 
 def upload_file(file_path, url):
-    
-
     # Check if file has any content
     if os.path.getsize(file_path) == 0:
         response = requests.put(url)
@@ -19,7 +17,7 @@ def upload_file(file_path, url):
         # Upload the file to the presigned URL
         with open(file_path, "rb") as file:
             response = requests.put(url, data=file)
-    
+
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
         print(response.text, file=sys.stderr)
@@ -28,28 +26,24 @@ def upload_file(file_path, url):
     print("File uploaded successfully", file=sys.stderr)
     return True
 
-    
+
 def request_presigned_url(data, token, server_url):
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
+    headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.post(server_url, headers=headers, json=data)
- 
+
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
         print(response.text, file=sys.stderr)
         return
-    
 
-    presigned_url = response.json()['presigned_url']
-
+    presigned_url = response.json()["presigned_url"]
 
     return presigned_url
-    
+
 
 def main():
-    config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
+    config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
@@ -74,9 +68,7 @@ def main():
     # Create body with file and user (server links user to public key)
     data = {"file": args.file, "user": config["user"]}
 
-    url = request_presigned_url(data, 
-                                token, 
-                                config['server_url'])
+    url = request_presigned_url(data, token, config["server_url"])
 
     if not url:
         sys.exit(1)
@@ -87,7 +79,6 @@ def main():
         sys.exit(1)
     else:
         sys.exit(0)
-
 
 
 if __name__ == "__main__":
