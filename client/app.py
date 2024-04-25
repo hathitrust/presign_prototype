@@ -10,9 +10,15 @@ import lib.key_helper as kh
 
 
 def upload_file(file_path, url):
-    # Upload the file to the presigned URL
-    with open(file_path, "rb") as file:
-        response = requests.put(url, data=file)
+    
+
+    # Check if file has any content
+    if os.path.getsize(file_path) == 0:
+        response = requests.put(url)
+    else:
+        # Upload the file to the presigned URL
+        with open(file_path, "rb") as file:
+            response = requests.put(url, data=file)
     
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
