@@ -1,12 +1,22 @@
 import re
 from pathlib import Path
 
+import os
 import boto3
 import yaml
 from flask import Flask, request
 from jose import jwt
 
-from lib.key_helper import PublicKeyManager
+bucket_name = os.getenv("BUCKET_NAME")
+folder = os.getenv("FOLDER")
+profile = os.getenv("PROFILE")
+region = os.getenv("REGION")
+
+URL_EXPIRATION = os.getenv("URL_EXPIRATION", 3600)
+TOKEN_EXPIRATION = os.getenv("TOKEN_EXPIRATION", 3600)
+MAX_FILE_NAME_LENGTH = os.getenv("MAX_FILE_NAME_LENGTH", 60)
+
+from key_helper import PublicKeyManager
 
 app = Flask(__name__)
 
@@ -15,23 +25,14 @@ config_path = Path(__file__).parent / "config.yaml"
 with open(config_path, "r") as config_file:
     config = yaml.safe_load(config_file)
 
-# URL expiration time in seconds
-URL_EXPIRATION = 3600 # 1 hour
-
-# time limit for token
-TOKEN_EXPIRATION = 3600
-
-# Maximum length of the file name
-MAX_FILE_NAME_LENGTH = 60
-
 # Create a Boto3 session with the specified profile
-session = boto3.Session(profile_name=config["profile"], region_name=config["region"])
+session = boto3.Session(profile_name=profile, region_name=region)
 
 # Create an S3 client from the session
 s3_client = session.client("s3")
 
 # Directory containing public keys
-key_dir = Path(config["key_dir"])
+key_dir = Path("keys")
 
 # Initialize the public key manager
 key_manager = PublicKeyManager(key_dir)
@@ -93,13 +94,13 @@ def handle_request():
     if not is_valid_filename(file_name):
         return {"error": "File name contains invalid characters"}, 400
 
-    object_name = f"{config['folder']}/{user}/{file_name}"
-    presigned_url = generate_presigned_url(config["bucket_name"], object_name, URL_EXPIRATION)
+    object_name = f"{folder}/{user}/{file_name}"
+    presigned_url = generate_presigned_url(bucket_name, object_name, URL_EXPIRATION)
     if not presigned_url:
         return {"error": "Error generating pre-signed URL"}, 500
 
     return {"presigned_url": presigned_url}, 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=8000)
 

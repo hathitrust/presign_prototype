@@ -1,0 +1,18 @@
+services:
+  presign-prototype:
+    build:
+      context: .
+      target: production
+    command: ["python", "-m", "gunicorn", "-b", "0.0.0.0", "app:app"]
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ../keys:/app/keys
+  #   depends_on:
+  #     - test
+  # test:
+  #   build:
+  #     context: .
+  #     target: test
