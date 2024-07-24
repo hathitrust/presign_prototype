@@ -10,9 +10,9 @@ services:
       - .env
     volumes:
       - ../keys:/app/keys
-  #   depends_on:
-  #     - test
-  # test:
-  #   build:
-  #     context: .
-  #     target: test
+    depends_on:
+      - test
+  test:
+    build:
+      context: .
+      target: test

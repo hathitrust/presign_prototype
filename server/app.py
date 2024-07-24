@@ -12,9 +12,9 @@ folder = os.getenv("FOLDER")
 profile = os.getenv("PROFILE")
 region = os.getenv("REGION")
 
-URL_EXPIRATION = os.getenv("URL_EXPIRATION", 3600)
-TOKEN_EXPIRATION = os.getenv("TOKEN_EXPIRATION", 3600)
-MAX_FILE_NAME_LENGTH = os.getenv("MAX_FILE_NAME_LENGTH", 60)
+URL_EXPIRATION = int(os.getenv("URL_EXPIRATION", 3600))
+TOKEN_EXPIRATION = int(os.getenv("TOKEN_EXPIRATION", 3600))
+MAX_FILE_NAME_LENGTH = int(os.getenv("MAX_FILE_NAME_LENGTH", 60))
 
 from key_helper import PublicKeyManager
 
@@ -26,7 +26,7 @@ with open(config_path, "r") as config_file:
     config = yaml.safe_load(config_file)
 
 # Create a Boto3 session with the specified profile
-session = boto3.Session(profile_name=profile, region_name=region)
+session = boto3.Session(aws_access_key_id=config["aws_access_key_id"], aws_secret_access_key=config["aws_secret_access_key"])
 
 # Create an S3 client from the session
 s3_client = session.client("s3")
