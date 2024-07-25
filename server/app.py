@@ -20,13 +20,8 @@ from key_helper import PublicKeyManager
 
 app = Flask(__name__)
 
-# Load configuration from the config file
-config_path = Path(__file__).parent / "config.yaml"
-with open(config_path, "r") as config_file:
-    config = yaml.safe_load(config_file)
-
 # Create a Boto3 session with the specified profile
-session = boto3.Session(aws_access_key_id=config["aws_access_key_id"], aws_secret_access_key=config["aws_secret_access_key"])
+session = boto3.Session()
 
 # Create an S3 client from the session
 s3_client = session.client("s3")
