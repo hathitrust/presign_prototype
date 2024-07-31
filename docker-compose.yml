@@ -3,11 +3,12 @@ services:
     build:
       context: .
       target: production
-    command: ["python", "-m", "gunicorn", "-b", "0.0.0.0", "app:app"]
+    command: ["python", "-m", "gunicorn", "-b", "0.0.0.0", "server:app"]
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.server
+      - .env.client
     volumes:
       - ../keys:/app/keys
     depends_on:

@@ -10,6 +10,7 @@ RUN useradd -m -d /app -u ${UID} -g ${GID} -o -s /bin/bash app
 # Set the working directory to /app
 WORKDIR /app
 
+
 # Both build and development need poetry, so it is its own step.
 FROM base AS poetry
 RUN pip install poetry
@@ -39,6 +40,7 @@ RUN poetry install --no-root --without dev && rm -rf ${POETRY_CACHE_DIR};
 FROM build AS test
 # Install dev dependencies
 RUN poetry install --only dev --no-root && rm -rf ${POETRY_CACHE_DIR};
+
 COPY . .
 # Run tests
 USER app
