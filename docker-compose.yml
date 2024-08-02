@@ -38,12 +38,12 @@ services:
       - TOKEN_EXPIRATION=3600
       - MAX_FILE_NAME_LENGTH=60
       # Make sure these are exported before running the docker-compose command.
-      - AWS_REGION=${AWS_REGION} 
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-      - S3_FOLDER=${S3_FOLDER}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      # - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN} # If using temporary credentials; comment out if not.
+      - AWS_REGION
+      - S3_BUCKET_NAME
+      - S3_FOLDER
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
     volumes:
       - ./keys:/app/keys
     depends_on:
