@@ -1,23 +1,23 @@
-import os
-import pytest
-from unittest.mock import patch, mock_open, MagicMock
-from client import upload_file, request_presigned_url, main
-import lib.key_helper as kh
 import sys
+
+import lib.key_helper as kh
+import pytest
+from client import upload_file, request_presigned_url, main
+from unittest.mock import patch, mock_open, MagicMock
 
 
 def test_upload_file():
-    with patch('builtins.open', mock_open(read_data="data")) as mock_file:
-        with patch('client.requests.put') as mock_put:
+    with patch("builtins.open", mock_open(read_data="data")) as mock_file:
+        with patch("client.requests.put") as mock_put:
             mock_put.return_value.status_code = 200
             result = upload_file("fake_path", "http://fakeurl.com")
             assert result is True
             mock_file.assert_called_once_with("fake_path", "rb")
 
 def test_upload_file_failure():
-    with patch('builtins.open', mock_open(read_data="data")) as mock_file:
-        with patch('client.requests.put') as mock_put:
-            mock_put.return_value = MagicMock(status_code=404, text='Not Found')
+    with patch("builtins.open", mock_open(read_data="data")) as mock_file:
+        with patch("client.requests.put") as mock_put:
+            mock_put.return_value = MagicMock(status_code=404, text="Not Found")
             result = upload_file("fake_path", "http://fakeurl.com")
             assert result is False
             mock_file.assert_called_once_with("fake_path", "rb")
@@ -26,20 +26,20 @@ def test_request_presigned_url():
     # Prepare the mock response object to return from requests.post
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {'presigned_url': 'http://fakeurl.com'}
+    mock_response.json.return_value = {"presigned_url": "http://fakeurl.com"}
 
-    with patch('client.requests.post', return_value=mock_response) as mock_post:
+    with patch("client.requests.post", return_value=mock_response) as mock_post:
         # Call the function under test
-        url = request_presigned_url({'file': 'myfile'}, 'mock_token', 'http://server_url.com')
+        url = request_presigned_url({"file": "myfile"}, "mock_token", "http://server_url.com")
 
         # Assert that the function returns the correct URL
-        assert url == 'http://fakeurl.com', "The URL returned from request_presigned_url did not match the expected URL."
+        assert url == "http://fakeurl.com", "The URL returned from request_presigned_url did not match the expected URL."
         mock_post.assert_called_once()
 
 def test_request_presigned_url_failure():
-    with patch('client.requests.post') as mock_post:
-        mock_post.return_value = MagicMock(status_code=500, text='Server Error')
-        url = request_presigned_url({'file': 'myfile'}, 'mock_token', 'http://server_url.com')
+    with patch("client.requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=500, text="Server Error")
+        url = request_presigned_url({"file": "myfile"}, "mock_token", "http://server_url.com")
         assert url is None
         mock_post.assert_called_once()
 
@@ -54,15 +54,15 @@ def test_client_main_function(tmpdir, capsys):
         f.write(kh.generate_rsa_pem_key_pair()[0])
     sys.argv = ["client.py", "--file", test_file_path]
 
-    os.environ["PRIVATE_KEYS_PATH"] = private_key_path
-    os.environ["USER"] = "test"
-    os.environ["EMAIL"] = "email@example.com"
-    os.environ["JWT_EXPIRATION"] = "3600"
-    os.environ["SERVER_URL"] = "http://example.com"
-    with patch('client.requests.post') as mock_post, \
-         patch('client.requests.put') as mock_put:
+    with patch("client.PRIVATE_KEYS_PATH", private_key_path), \
+         patch("client.USER", "test"), \
+         patch("client.EMAIL", "email@example.com"), \
+         patch("client.JWT_EXPIRATION", 3600), \
+         patch("client.SERVER_URL", "http://example.com"), \
+         patch("client.requests.post") as mock_post, \
+         patch("client.requests.put") as mock_put:
 
-        mock_post.return_value = MagicMock(status_code=200, text='http://fakeurl.com')
+        mock_post.return_value = MagicMock(status_code=200, text="http://fakeurl.com")
         mock_put.return_value = MagicMock(status_code=200)  # Simulate successful upload
 
         with pytest.raises(SystemExit) as pytest_e:

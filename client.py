@@ -4,15 +4,14 @@ import sys
 from pathlib import Path
 
 import requests
-
 import lib.key_helper as kh
 
+
 PRIVATE_KEYS_PATH = os.getenv("PRIVATE_KEYS_PATH", "keys/example_private.pem")
-USER = os.getenv("USER", "test")
+USER = os.getenv("USER", "example_user")
 EMAIL = os.getenv("EMAIL", "example@example.com")
 JWT_EXPIRATION = int(os.getenv("JWT_EXPIRATION", "3600"))
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000/api/endpoint")
-
 
 def upload_file(file_path, url):
     # Check if file has any content

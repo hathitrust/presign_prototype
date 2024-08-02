@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -8,17 +9,22 @@ import lib.key_helper as kh
 
 
 def main():
-  # Get the current working directory
-  current_dir = os.getcwd()
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--location", help="Directory to store the keys", default="keys")
+  parser.add_argument("--user", help="Name of user", default="example")
+  args = parser.parse_args()
 
+  if not os.path.exists(args.location):
+    os.makedirs(args.location)
+    
   print("Generating RSA keys...", file=sys.stderr)
 
   # Generate a new RSA private key and corresponding public key
   private_key, public_key = kh.generate_rsa_pem_key_pair()
 
   # Paths where the keys will be saved
-  public_key_path = os.path.join(current_dir, 'public.pem')
-  private_key_path = os.path.join(current_dir, 'private.pem')
+  public_key_path = os.path.join(args.location, f'{args.user}_public.pem')
+  private_key_path = os.path.join(args.location, f'{args.user}_private.pem')
 
   # Save the public key in PEM format to the specified file
   kh.save_public_key(public_key, public_key_path)

@@ -44,7 +44,9 @@ RUN poetry install --only dev --no-root && rm -rf ${POETRY_CACHE_DIR};
 COPY . .
 # Run tests
 USER app
-RUN poetry run pytest tests
+
+ARG TEST_COMMAND
+RUN ${TEST_COMMAND}
 
 
 FROM base AS production

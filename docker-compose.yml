@@ -1,19 +1,71 @@
 services:
-  presign-prototype:
+
+  test-lib:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/lib
+
+  test-server:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/server
+    
+  test-client:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/client
+    profiles:
+      - client
+
+  server:
     build:
       context: .
       target: production
     command: ["python", "-m", "gunicorn", "-b", "0.0.0.0", "server:app"]
     ports:
       - "8000:8000"
-    env_file:
-      - .env.server
-      - .env.client
+    environment:
+      - FLASK_ENV=production
+      - APP_PORT=8000
+      - KEYS_DIR=keys
+      - URL_EXPIRATION=3600
+      - TOKEN_EXPIRATION=3600
+      - MAX_FILE_NAME_LENGTH=60
+      # Make sure these are exported before running the docker-compose command.
+      - AWS_REGION=${AWS_REGION} 
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_FOLDER=${S3_FOLDER}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN} # If using temporary credentials.
     volumes:
-      - ../keys:/app/keys
+      - ./keys:/app/keys
     depends_on:
-      - test
-  test:
+      - test-lib
+      - test-server
+
+  client:
     build:
       context: .
-      target: test
+      target: production
+    # command: ["tail", "-f", "/dev/null"] # Swap with the command below to upload automatically, or use the command below to test manually. The file "test_file.txt" should already be present.
+    command: ["python", "client.py", "--file", "test_file.txt"]
+    environment:
+      - PRIVATE_KEYS_PATH=keys/example_private.pem
+      - USER=example
+      - EMAIL=example@example.com
+      - JWT_EXPIRATION=3600
+      - SERVER_URL=http://server:8000/api/endpoint
+    volumes:
+      - ./keys:/app/keys
+    depends_on:
+      - test-client
+      - server
+    profiles:
+      - client
