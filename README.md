@@ -20,13 +20,14 @@ Note: The prototype assumes AWS sessions are tied directly to a user's AWS crede
     - The `AWS_REGION` is the region of the S3 bucket.
     - The `S3_BUCKET` is the name of the S3 bucket.
     - The `S3_FOLDER` is the folder in the S3 bucket where the files will be uploaded.
-    - The `AWS_ACCESS_KEY_ID` is the access key for the IAM user.
-    - The `AWS_SECRET_ACCESS_KEY` is the secret access key for the IAM user.
+    - The `AWS_ACCESS_KEY_ID` is the access key for the IAM User.
+    - The `AWS_SECRET_ACCESS_KEY` is the secret access key for the IAM User.
+    - The `AWS_SESSION_TOKEN` is only relevant for temporary credentials, comment it out if not.
 - The rest can be left untouched for the sake of the demo.
 
 ### Keys
 - The directory containing the RSA keys by default is named "keys", and is present at the root of the project. It will be mounted to the Docker container. If you change this, make sure to update the `docker-compose.yml` file.
-- For each user (default name is "example"), two key files are expected in that directory:
+- For each user (default name is "example", and this is different from the IAM User), two key files are expected in that directory:
     - Public key file: `<user>_public.pem`
     - Private key file: `<user>_private.pem`
 - Run `generate_keys.py --location <keys_dir_name> --user <user>` to set up the key files.

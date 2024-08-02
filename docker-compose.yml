@@ -43,7 +43,7 @@ services:
       - S3_FOLDER=${S3_FOLDER}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN} # If using temporary credentials.
+      # - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN} # If using temporary credentials; comment out if not.
     volumes:
       - ./keys:/app/keys
     depends_on:
@@ -54,8 +54,8 @@ services:
     build:
       context: .
       target: production
-    # command: ["tail", "-f", "/dev/null"] # Swap with the command below to upload automatically, or use the command below to test manually. The file "test_file.txt" should already be present.
-    command: ["python", "client.py", "--file", "test_file.txt"]
+    # command: ["tail", "-f", "/dev/null"] # This keep the container alive for manual upload.
+    command: ["python", "client.py", "--file", "test_file.txt"] # This automatically tries uploading test_file.txt, which should be present by default.
     environment:
       - PRIVATE_KEYS_PATH=keys/example_private.pem
       - USER=example
