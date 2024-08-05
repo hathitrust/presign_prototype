@@ -11,7 +11,7 @@ import lib.key_helper as kh
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--location", help="Directory to store the keys", default="keys")
-  parser.add_argument("--user", help="Name of user", default="example")
+  parser.add_argument("--user", help="Name of user", required=True)
   args = parser.parse_args()
 
   if not os.path.exists(args.location):

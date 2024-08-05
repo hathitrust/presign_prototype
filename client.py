@@ -7,12 +7,6 @@ import requests
 import lib.key_helper as kh
 
 
-PRIVATE_KEYS_PATH = os.getenv("PRIVATE_KEYS_PATH", "keys/example_private.pem")
-USER = os.getenv("USER", "example_user")
-EMAIL = os.getenv("EMAIL", "example@example.com")
-JWT_EXPIRATION = int(os.getenv("JWT_EXPIRATION", "3600"))
-SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000/api/endpoint")
-
 def upload_file(file_path, url):
     # Check if file has any content
     if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
@@ -49,26 +43,31 @@ def request_presigned_url(data, token, server_url):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", help="File to be uploaded", required=True)
+    parser.add_argument("--private_key_path", help="Path to private key", default=os.getenv("PRIVATE_KEYS_PATH"))
+    parser.add_argument("--user", help="User", default=os.getenv("USER"))
+    parser.add_argument("--email", help="Email", default=os.getenv("EMAIL"))
+    parser.add_argument("--jwt_expiration", help="JWT expiration", default=os.getenv("JWT_EXPIRATION"), type=int)
+    parser.add_argument("--server_url", help="Server URL", default=os.getenv("SERVER_URL"))
     args = parser.parse_args()
 
     # Get private key
-    private_key_path = Path(PRIVATE_KEYS_PATH)
+    private_key_path = Path(args.private_key_path)
 
     with open(private_key_path, "rb") as key_file:
         private_key = key_file.read()
 
     # Create the headers
     token = kh.generate_jwt_token(
-        USER,
-        EMAIL,
+        args.user,
+        args.email,
         private_key,
-        JWT_EXPIRATION,
+        args.jwt_expiration,
     )
 
     # Create body with file and user (server links user to public key)
-    data = {"file": args.file, "user": USER}
+    data = {"file": args.file, "user": args.user}
 
-    url = request_presigned_url(data, token, SERVER_URL)
+    url = request_presigned_url(data, token, args.server_url)
 
     if not url:
         sys.exit(1)

@@ -21,7 +21,7 @@ services:
       args:
         - TEST_COMMAND=poetry run pytest tests/client
     profiles:
-      - client
+      - integration
 
   server:
     build:
@@ -54,12 +54,14 @@ services:
     build:
       context: .
       target: production
-    # command: ["tail", "-f", "/dev/null"] # This keep the container alive for manual upload.
-    command: ["python", "client.py", "--file", "test_file.txt"] # This automatically tries uploading test_file.txt, which should be present by default.
+    command: >
+      bash -c "echo 'test upload' > test_file.txt
+      && python generate_rsa_keys.py --user test
+      && python client.py --file test_file.txt"
     environment:
-      - PRIVATE_KEYS_PATH=keys/example_private.pem
-      - USER=example
-      - EMAIL=example@example.com
+      - PRIVATE_KEYS_PATH=keys/test_private.pem
+      - USER=test
+      - EMAIL=test@example.com
       - JWT_EXPIRATION=3600
       - SERVER_URL=http://server:8000/api/endpoint
     volumes:
@@ -68,4 +70,4 @@ services:
       - test-client
       - server
     profiles:
-      - client
+      - integration

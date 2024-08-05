@@ -27,15 +27,16 @@ Note: The prototype assumes AWS sessions are tied directly to a user's AWS crede
 
 ### Keys
 - The directory containing the RSA keys by default is named "keys", and is present at the root of the project. It will be mounted to the Docker container. If you change this, make sure to update the `docker-compose.yml` file.
-- For each user (default name is "example", and this is different from the IAM User), two key files are expected in that directory:
+- For each user (this is different from the IAM User), two key files are expected in that directory:
     - Public key file: `<user>_public.pem`
     - Private key file: `<user>_private.pem`
 - Run `generate_keys.py --location <keys_dir_name> --user <user>` to set up the key files.
     - Location defaults to "keys".
-    - User defaults to "example".
+    - User is required.
 
 ## Running the demo
 - To run only the server: `docker-compose up --build`
     - You can make custom requests to the server by following the logic in the `client.py` file.
-- To run the server and the client: `docker-compose --profile client up --build`
+    - Set the required environment variables or add argument flags for the client.
+- To run the server and the client: `docker-compose --profile integration up --build`
     - Look at the comment in the `docker-compose.yml` for more information.

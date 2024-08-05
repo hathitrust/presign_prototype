@@ -52,14 +52,16 @@ def test_client_main_function(tmpdir, capsys):
         f.write("{file: 'dummy_file.txt', user: 'test'}")
     with open(private_key_path, "wb") as f:
         f.write(kh.generate_rsa_pem_key_pair()[0])
-    sys.argv = ["client.py", "--file", test_file_path]
+    sys.argv = [
+        "client.py", "--file", test_file_path,
+        "--private_key_path", private_key_path,
+        "--user", "test", 
+        "--email", "email@example.com", 
+        "--jwt_expiration", "3600", 
+        "--server_url", "http://example.com"
+    ]
 
-    with patch("client.PRIVATE_KEYS_PATH", private_key_path), \
-         patch("client.USER", "test"), \
-         patch("client.EMAIL", "email@example.com"), \
-         patch("client.JWT_EXPIRATION", 3600), \
-         patch("client.SERVER_URL", "http://example.com"), \
-         patch("client.requests.post") as mock_post, \
+    with patch("client.requests.post") as mock_post, \
          patch("client.requests.put") as mock_put:
 
         mock_post.return_value = MagicMock(status_code=200, text="http://fakeurl.com")
