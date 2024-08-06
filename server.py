@@ -1,45 +1,29 @@
+import os
 import re
 from pathlib import Path
 
 import boto3
-import yaml
 from flask import Flask, request
+from lib.key_helper import PublicKeyManager
 from jose import jwt
 
-from lib.key_helper import PublicKeyManager
+APP_PORT = int(os.getenv("APP_PORT", "8000"))
+KEYS_DIR = os.getenv("KEYS_DIR", "keys")
+URL_EXPIRATION = int(os.getenv("URL_EXPIRATION", "3600"))
+TOKEN_EXPIRATION = int(os.getenv("TOKEN_EXPIRATION", "3600"))
+MAX_FILE_NAME_LENGTH = int(os.getenv("MAX_FILE_NAME_LENGTH", "60"))
 
-app = Flask(__name__)
+AWS_REGION = os.getenv("AWS_REGION")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+S3_FOLDER = os.getenv("S3_FOLDER")
 
-# Load configuration from the config file
-config_path = Path(__file__).parent / "config.yaml"
-with open(config_path, "r") as config_file:
-    config = yaml.safe_load(config_file)
-
-# URL expiration time in seconds
-URL_EXPIRATION = 3600 # 1 hour
-
-# time limit for token
-TOKEN_EXPIRATION = 3600
-
-# Maximum length of the file name
-MAX_FILE_NAME_LENGTH = 60
-
-# Create a Boto3 session with the specified profile
-session = boto3.Session(profile_name=config["profile"], region_name=config["region"])
-
-# Create an S3 client from the session
-s3_client = session.client("s3")
-
-# Directory containing public keys
-key_dir = Path(config["key_dir"])
-
-# Initialize the public key manager
-key_manager = PublicKeyManager(key_dir)
+s3_client = boto3.client("s3")
+keys_dir = Path(KEYS_DIR) # Directory containing public keys
+public_key_manager = PublicKeyManager(keys_dir) # Maps users to their public keys
 
 def is_valid_filename(filename):
     pattern = re.compile(r'^[a-zA-Z0-9\-_\.]+$')
     return bool(pattern.match(filename))
-
 
 def generate_presigned_url(bucket_name, object_name, expiration):
     """
@@ -55,6 +39,8 @@ def generate_presigned_url(bucket_name, object_name, expiration):
     except Exception as e:
         print(f"Error generating pre-signed URL: {e}")
         return None
+    
+app = Flask(__name__)
 
 @app.route("/api/endpoint", methods=["POST"])
 def handle_request():
@@ -71,7 +57,7 @@ def handle_request():
     if not user:
         return {"error": "Missing 'user' in request body"}, 400
 
-    public_key = key_manager.get_key(user)
+    public_key = public_key_manager.get_key(user)
     if not public_key:
         return {"error": "Public key not found for user"}, 404
 
@@ -93,13 +79,12 @@ def handle_request():
     if not is_valid_filename(file_name):
         return {"error": "File name contains invalid characters"}, 400
 
-    object_name = f"{config['folder']}/{user}/{file_name}"
-    presigned_url = generate_presigned_url(config["bucket_name"], object_name, URL_EXPIRATION)
+    object_name = f"{S3_FOLDER}/{user}/{file_name}"
+    presigned_url = generate_presigned_url(S3_BUCKET_NAME, object_name, URL_EXPIRATION)
     if not presigned_url:
         return {"error": "Error generating pre-signed URL"}, 500
 
     return {"presigned_url": presigned_url}, 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run(debug=True, host="0.0.0.0", port=APP_PORT)

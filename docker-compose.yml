@@ -1,0 +1,73 @@
+services:
+
+  test-lib:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/lib
+
+  test-server:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/server
+    
+  test-client:
+    build:
+      context: .
+      target: test
+      args:
+        - TEST_COMMAND=poetry run pytest tests/client
+    profiles:
+      - integration
+
+  server:
+    build:
+      context: .
+      target: production
+    command: ["python", "-m", "gunicorn", "-b", "0.0.0.0", "server:app"]
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=production
+      - APP_PORT=8000
+      - KEYS_DIR=keys
+      - URL_EXPIRATION=3600
+      - TOKEN_EXPIRATION=3600
+      - MAX_FILE_NAME_LENGTH=60
+      # Make sure these are exported before running the docker-compose command.
+      - AWS_REGION
+      - S3_BUCKET_NAME
+      - S3_FOLDER
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+    volumes:
+      - ./keys:/app/keys
+    depends_on:
+      - test-lib
+      - test-server
+
+  client:
+    build:
+      context: .
+      target: production
+    command: >
+      bash -c "echo 'test upload' > test_file.txt
+      && python generate_rsa_keys.py --user test
+      && python client.py --file test_file.txt"
+    environment:
+      - PRIVATE_KEYS_PATH=keys/test_private.pem
+      - USER=test
+      - EMAIL=test@example.com
+      - JWT_EXPIRATION=3600
+      - SERVER_URL=http://server:8000/api/endpoint
+    volumes:
+      - ./keys:/app/keys
+    depends_on:
+      - test-client
+      - server
+    profiles:
+      - integration

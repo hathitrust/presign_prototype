@@ -1,5 +1,0 @@
-key_dir: keys
-bucket_name: example-bucket
-folder: example-folder
-profile: aws-profile
-region: aws-region

@@ -1,21 +1,6 @@
-import time
-from pathlib import Path
-from unittest.mock import patch
-
-import pytest
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from jose import jwt
-
-from server.app import app  # Import the Flask app
 from lib.key_helper import generate_jwt_token
 from lib.key_helper import generate_rsa_pem_key_pair
-
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
+from unittest.mock import patch
 
 def test_missing_auth_header(client):
     # Test the endpoint without Authorization header
@@ -23,7 +8,7 @@ def test_missing_auth_header(client):
     assert response.status_code == 401
     assert 'Missing authorization header' in response.data.decode()
 
-@patch('server.app.PublicKeyManager.get_key')
+@patch('server.PublicKeyManager.get_key')
 def test_invalid_token(mock_get_key, client):
     # Setup mock to return a fake user key
     mock_get_key.return_value = "fake user exists"
@@ -36,8 +21,8 @@ def test_invalid_token(mock_get_key, client):
     assert response.status_code == 401
     assert 'Invalid or expired token' in response.data.decode()
 
-@patch('server.app.PublicKeyManager.get_key')
-@patch('server.app.s3_client')
+@patch('server.PublicKeyManager.get_key')
+@patch('server.s3_client')
 def test_valid_request(mock_s3_client, mock_get_key, client):
 
     # Load private key to generate token
