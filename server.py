@@ -85,6 +85,3 @@ def handle_request():
         return {"error": "Error generating pre-signed URL"}, 500
 
     return {"presigned_url": presigned_url}, 200
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=APP_PORT)

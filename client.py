@@ -6,15 +6,16 @@ from pathlib import Path
 import requests
 import lib.key_helper as kh
 
+TIMEOUT = 3600
 
 def upload_file(file_path, url):
     # Check if file has any content
     if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
-        response = requests.put(url)
+        response = requests.put(url, timeout=TIMEOUT)
     else:
         # Upload the file to the presigned URL
         with open(file_path, "rb") as file:
-            response = requests.put(url, data=file)
+            response = requests.put(url, data=file, timeout=TIMEOUT)
 
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
@@ -28,7 +29,7 @@ def upload_file(file_path, url):
 def request_presigned_url(data, token, server_url):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.post(server_url, headers=headers, json=data)
+    response = requests.post(server_url, headers=headers, json=data, timeout=TIMEOUT)
 
     if response.status_code != 200:
         print(response.status_code, file=sys.stderr)
