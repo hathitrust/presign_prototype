@@ -1,0 +1,32 @@
+name: Build
+
+on:
+    workflow_dispatch:
+        inputs:
+            branch_hash:
+                description: Revision or Branch to build
+                default: main
+            environments:
+                description: The environment to deploy to
+                type: choice
+                default: linux/amd64,linux/arm64
+                options:
+                - testing
+                - staging
+                - production
+
+jobs:
+    deploy-unstable:
+            runs-on: ubuntu-latest
+            permissions:
+                contents: read
+                packages: write
+            steps:
+                - name: Deploy to workshop
+                  uses: hathitrust/github_actions/deploy@DEV-1150
+                  with:
+                    image: ghcr.io/${{ github.repository }}${{ inputs.branch_hash }}
+                    file: environments/${{ github.event.repository.name }}/${{inputs.environments}}/web-image.txt
+                    CONFIG_REPO_RW_APP_ID: ${{ vars.CONFIG_REPO_RW_APP_ID }}
+                    CONFIG_REPO_FULL_NAME: ${{ vars.CONFIG_REPO_FULL_NAME }}
+                    CONFIG_REPO_RW_KEY: ${{secrets.CONFIG_REPO_RW_KEY}}
