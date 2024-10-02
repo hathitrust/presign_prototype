@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
         inputs:
             branch_hash:
-                description: Revision or Branch to build
+                description: Branch hash or revision to deploy
                 default: main
             environments:
                 description: The environment to deploy to
